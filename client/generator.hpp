@@ -4,6 +4,8 @@
 #include <functional>
 #include <type_traits>
 
+#include "network.hpp"
+
 namespace mrpc {
 // type list for arguments
 template <typename... Args> struct type_list;
@@ -35,6 +37,7 @@ struct empty_list : std::conditional_t<(count<ArgTypeList>::value == 0),
 // Handler
 template <typename... Args>
 class Handler {
+    static std::unique_ptr<std::string> args_json;
     static void actual_for_void(){};
     template <typename T> static void actual_for_args(T &args){};
 
@@ -68,13 +71,16 @@ class Handler {
     };
 
 public:
-    static void handle(Args &... args) {
+    static std::unique_ptr<std::string> handle(Args &... args) {
+        args_json = std::make_unique<std::string>();
         using ArgTypeList = type_list<Args...>;
 
         constexpr bool has_tail_v = has_tail<ArgTypeList>::value;
         constexpr bool empty_list_v = empty_list<ArgTypeList>::value;
 
         handle_impl<ArgTypeList, has_tail_v, empty_list_v, Args...>::call(args...);
+
+        return std::move(args_json);
     }
 };
 

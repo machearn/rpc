@@ -3,10 +3,15 @@
 
 #include <functional>
 #include <type_traits>
+#include <array>
+
+#include "../third_part/include/json.hh"
 
 #include "network.hpp"
 
 namespace mrpc {
+using json = nlohmann::json;
+
 // type list for arguments
 template <typename... Args> struct type_list;
 
@@ -29,65 +34,104 @@ template <typename ArgTypeList>
 struct has_tail : std::conditional_t<(count<ArgTypeList>::value > 1),
                                      std::true_type, std::false_type> {};
 
-// check wheather empty list
-template <typename ArgTypeList>
-struct empty_list : std::conditional_t<(count<ArgTypeList>::value == 0),
-                                       std::true_type, std::false_type> {};
+template <typename T>
+void to_json(json& arg_json, const T& arg) {
+    arg_json = arg;
+}
+
+template <typename T>
+void add_type(json& j, T* arg) {
+    j["type"] = "pointer";
+    json arg_json;
+    to_json(arg_json, *arg);
+    j["arg"] = arg_json;
+}
+
+template <typename T>
+void add_type(json& j, T& arg) {
+    j["type"] = "object";
+    json arg_json;
+    to_json(arg_json, arg);
+    j["arg"] = arg_json;
+}
+
+template <typename T>
+void add_type(json& j, std::unique_ptr<T>& arg) {
+    j["type"] = "unique pointer";
+    json arg_json;
+    to_json(arg_json, *arg);
+    j["arg"] = arg_json;
+}
+
+template <typename T>
+void add_type(json& j, std::shared_ptr<T>& arg) {
+    j["type"] = "shared pointer";
+    json arg_json;
+    to_json(arg_json, *arg);
+    j["arg"] = arg_json;
+}
 
 // Handler
+// todo: add type field for every argument
 template <typename... Args>
-class Handler {
-    static std::unique_ptr<std::string> args_json;
-    static void actual_for_void(){};
-    template <typename T> static void actual_for_args(T &args){};
+class ArgsParser {
+    template <typename T> static void parse(json& args_array, size_t index, T& arg){
+        json type_arg;
+        add_type(type_arg, arg);
+        args_array[index] = type_arg;
+    };
 
-    template <typename ArgTypeList, bool HasTail, bool Empty, typename... ArgList>
-    struct handle_impl;
+    template <typename ArgTypeList, bool HasTail, typename... ArgList>
+    struct args_parser_impl;
 
     // Case 1: has tail
     template <typename ArgTypeList, typename Head, typename... Tail>
-    struct handle_impl<ArgTypeList, true, false, Head, Tail...> {
-        static void call(Head &head, Tail &... tail) {
-            actual_for_args(head);
+    struct args_parser_impl<ArgTypeList, true, Head, Tail...> {
+        static void call(json& args_array, size_t index, Head &head, Tail &... tail) {
+            parse(args_array, index, head);
 
             using ArgTypeListTail = typename ArgTypeList::tail;
 
             constexpr bool has_tail_v = has_tail<ArgTypeListTail>::value;
-            constexpr bool empty_list_v = empty_list<ArgTypeListTail>::value;
 
-            handle_impl<ArgTypeListTail, has_tail_v, empty_list_v, Tail...>::call(tail...);
+            args_parser_impl<ArgTypeListTail, has_tail_v, Tail...>::call(args_array, index+1, tail...);
         }
     };
 
     // Case 2: no tail, not empty
     template <typename ArgTypeList, typename Head>
-    struct handle_impl<ArgTypeList, false, false, Head> {
-        static void call(Head &head) { actual_for_args(head); }
-    };
-
-    // Case 3: empty
-    template <typename ArgTypeList> struct handle_impl<ArgTypeList, false, true> {
-        static void call() { actual_for_void(); }
+    struct args_parser_impl<ArgTypeList, false, Head> {
+        static void call(json& args_array, size_t index, Head &head) {
+            parse(args_array, index, head);
+        }
     };
 
 public:
-    static std::unique_ptr<std::string> handle(Args &... args) {
-        args_json = std::make_unique<std::string>();
+    static json parser(const std::string func_name, Args &... args) {
         using ArgTypeList = type_list<Args...>;
 
         constexpr bool has_tail_v = has_tail<ArgTypeList>::value;
-        constexpr bool empty_list_v = empty_list<ArgTypeList>::value;
+        constexpr size_t args_len = count<ArgTypeList>::value;
 
-        handle_impl<ArgTypeList, has_tail_v, empty_list_v, Args...>::call(args...);
+        json args_array;
 
-        return std::move(args_json);
+        json serialization;
+        serialization["func_name"] = func_name;
+        serialization["length"] = args_len;
+
+        if (args_len > 0)
+            args_parser_impl<ArgTypeList, has_tail_v, Args...>::call(args_array, 0, args...);
+
+        serialization["args"] = args_array;
+
+        return serialization;
     }
 };
 
 template <typename Reply, typename... Args>
-auto wrapper() {
-    auto new_func = [](Args&&... args) {
-        Handler<Args...>::handle(args...);
+auto wrapper(const std::string& func_name) {
+    auto new_func = [func_name](Args&&... args) {
+        ArgsParser<Args...>::parser(func_name, args...);
         Reply reply = 0;
         return reply;
     };

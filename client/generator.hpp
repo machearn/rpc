@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <array>
 
-#include "../third_part/include/json.hh"
+#include "../thirdparty/include/json.hh"
 
 #include "network.hpp"
 

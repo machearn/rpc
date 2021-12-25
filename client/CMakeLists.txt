@@ -14,10 +14,7 @@ if(NOT json_POPULATED)
 endif()
 
 add_library(rpc_client INTERFACE)
-if(MSVC)
-        add_custom_target(add.headers SOURCES add.hpp)
-endif()
 
-target_include_directories(rpc_client INTERFACE "${PROJECT_SOURCE_DIR}/client")
+target_include_directories(rpc_client INTERFACE "${PROJECT_SOURCE_DIR}/client/include")
 
 target_link_libraries(rpc_client INTERFACE nlohmann_json::nlohmann_json)

@@ -29,7 +29,7 @@ template <typename... Args>
 struct count<type_list<Args...>>
     : std::integral_constant<std::size_t, sizeof...(Args)> {};
 
-// check wheather has tail
+// check whether it has tail
 template <typename ArgTypeList>
 struct has_tail : std::conditional_t<(count<ArgTypeList>::value > 1),
                                      std::true_type, std::false_type> {};
@@ -39,8 +39,9 @@ void to_json(json& arg_json, const T& arg) {
     arg_json = arg;
 }
 
+// todo: try to use concept to make overload more precise
 template <typename T>
-void add_type(json& j, T* arg) {
+void add_type(json& j, T* const arg) {
     j["type"] = "pointer";
     json arg_json;
     to_json(arg_json, *arg);
@@ -48,7 +49,7 @@ void add_type(json& j, T* arg) {
 }
 
 template <typename T>
-void add_type(json& j, T& arg) {
+void add_type(json& j, const T& arg) {
     j["type"] = "object";
     json arg_json;
     to_json(arg_json, arg);
@@ -71,8 +72,7 @@ void add_type(json& j, std::shared_ptr<T>& arg) {
     j["arg"] = arg_json;
 }
 
-// Handler
-// todo: add type field for every argument
+// Arguments Parser
 template <typename... Args>
 class ArgsParser {
     template <typename T> static void parse(json& args_array, size_t index, T& arg){
@@ -107,7 +107,7 @@ class ArgsParser {
     };
 
 public:
-    static json parser(const std::string func_name, Args &... args) {
+    static void parser(json& serialization, const std::string& func_name, Args &... args) {
         using ArgTypeList = type_list<Args...>;
 
         constexpr bool has_tail_v = has_tail<ArgTypeList>::value;
@@ -115,7 +115,6 @@ public:
 
         json args_array;
 
-        json serialization;
         serialization["func_name"] = func_name;
         serialization["length"] = args_len;
 
@@ -123,15 +122,14 @@ public:
             args_parser_impl<ArgTypeList, has_tail_v, Args...>::call(args_array, 0, args...);
 
         serialization["args"] = args_array;
-
-        return serialization;
     }
 };
 
 template <typename Reply, typename... Args>
 auto wrapper(const std::string& func_name) {
     auto new_func = [func_name](Args&&... args) {
-        ArgsParser<Args...>::parser(func_name, args...);
+        json serialization;
+        ArgsParser<Args...>::parser(serialization, func_name, args...);
         Reply reply = 0;
         return reply;
     };

@@ -1,6 +1,7 @@
 #ifndef GENERATOR_H_
 #define GENERATOR_H_
 
+#include <iostream>
 #include <functional>
 #include <type_traits>
 #include <array>
@@ -48,6 +49,7 @@ void add_type(json& j, T* const arg) {
     j["arg"] = arg_json;
 }
 
+// todo: try rvalue reference
 template <typename T>
 void add_type(json& j, const T& arg) {
     j["type"] = "object";
@@ -125,13 +127,16 @@ public:
     }
 };
 
+// todo: handle non-const reference or pointer parameter
+// todo: after finishing unit testing, support perfect forward
+// todo: change return type from string to Reply after implementing server, and remove relate test
 template <typename Reply, typename... Args>
 auto wrapper(const std::string& func_name) {
     auto new_func = [func_name](Args&&... args) {
         json serialization;
         ArgsParser<Args...>::parser(serialization, func_name, args...);
         Reply reply = 0;
-        return reply;
+        return to_string(serialization);
     };
     return new_func;
 }

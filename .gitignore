@@ -3,6 +3,7 @@
 *.log
 tmp/
 
-build/
+build-debug/
+build-release/
 compile_commands.json
 .cache/

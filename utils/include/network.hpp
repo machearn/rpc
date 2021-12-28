@@ -29,23 +29,23 @@ namespace mrpc {
     }
 
     int waiting(const std::string& ip, uint32_t port, std::string& data) {
-        std::unique_ptr<::sockaddr_in> listen_socket(new ::sockaddr_in());
-        ::inet_pton(AF_INET, ip.c_str(), &(listen_socket->sin_addr));
-        listen_socket->sin_family = AF_INET;
-        listen_socket->sin_port = htonl(port);
+        std::unique_ptr<::sockaddr_in> host_socket(new ::sockaddr_in());
+        ::inet_pton(AF_INET, ip.c_str(), &(host_socket->sin_addr));
+        host_socket->sin_family = AF_INET;
+        host_socket->sin_port = htonl(port);
 
         auto socket_fp = ::socket(PF_INET, SOCK_STREAM, 0);
         assert(socket_fp);
 
-        int ret = bind(socket_fp, (sockaddr*)listen_socket.get(), sizeof(*listen_socket));
+        int ret = bind(socket_fp, (sockaddr*)host_socket.get(), sizeof(*host_socket));
         assert(ret != -1);
         ret = listen(socket_fp, 5);
         assert(ret != -1);
 
-        std::unique_ptr<::sockaddr_in> server_socket(new ::sockaddr_in());
-        socklen_t server_socket_len = sizeof(*server_socket);
+        std::unique_ptr<::sockaddr_in> remote_socket(new ::sockaddr_in());
+        socklen_t server_socket_len = sizeof(*remote_socket);
 
-        int connfd = ::accept(socket_fp, (sockaddr*)server_socket.get(), &server_socket_len);
+        int connfd = ::accept(socket_fp, (sockaddr*)remote_socket.get(), &server_socket_len);
 
         if (connfd < 0) {
             std::cout << "Failed to build listening connection\n";

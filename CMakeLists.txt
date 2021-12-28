@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory("client")
 add_subdirectory("test")
+add_subdirectory("utils")
 
 enable_testing()
 

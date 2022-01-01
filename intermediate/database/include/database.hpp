@@ -8,9 +8,12 @@
 #include <optional>
 
 #include <bsoncxx/json.hpp>
+<<<<<<< HEAD
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
 #include <mongocxx/stdx.hpp>
+=======
+>>>>>>> 4af7804 (build operation interface for registration database)
 #include <mongocxx/uri.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/pool.hpp>
@@ -46,12 +49,18 @@ void configure(mongocxx::uri);
 
 class DatabaseOperation {
 public:
-    DatabaseOperation()=default;
-    explicit DatabaseOperation(const std::string&);
+    DatabaseOperation() = default;
 
-    void insert(const std::string&, const std::string&);
+    explicit DatabaseOperation(const std::string &);
 
-    std::optional<std::string> query(const std::string&, const std::string&);
+    std::optional<std::string> insert(const std::string &, const std::string &);
+
+    std::optional<std::string> query(const std::string &, const std::string &);
+
+    std::optional<std::int32_t>
+    update(const std::string &, const std::string &, const std::string &);
+
+    std::optional<std::int32_t> drop(const std::string &, const std::string &);
 
 private:
     std::unique_ptr<mongocxx::database> db = nullptr;

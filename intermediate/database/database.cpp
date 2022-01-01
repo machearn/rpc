@@ -31,13 +31,24 @@ DatabaseOperation::DatabaseOperation(const std::string &database) {
     db = std::make_unique<mongocxx::database>((*connection)[database]);
 }
 
-void DatabaseOperation::insert(const std::string &collection, const std::string &json) {
-    auto coll = (*db)[collection];
-    auto doc = bsoncxx::from_json(json);
-    coll.insert_one(doc.view());
+std::optional<std::string>
+DatabaseOperation::insert(const std::string &collection, const std::string &json) {
+    auto doc = bsoncxx::from_json(json).view();
+    auto func_name = doc["name"].get_utf8().value.to_string();
+    auto query_result = this->query(collection, func_name);
+    std::optional<std::string> ret;
+    if (!query_result) {
+        auto coll = (*db)[collection];
+        auto insert_result = coll.insert_one(doc);
+        if (insert_result) {
+            ret = insert_result->inserted_id().get_oid().value.to_string();
+        }
+    }
+    return ret;
 }
 
-std::optional<std::string> DatabaseOperation::query(const std::string &collection, const std::string &name) {
+std::optional<std::string>
+DatabaseOperation::query(const std::string &collection, const std::string &name) {
     auto query_doc = mrpc::make_document(mrpc::kvp("name", name));
     auto coll = (*db)[collection];
 
@@ -50,5 +61,36 @@ std::optional<std::string> DatabaseOperation::query(const std::string &collectio
         url = ip + ':' + port;
     }
     return url;
+}
+
+std::optional<std::int32_t>
+DatabaseOperation::update(const std::string &collection,
+                          const std::string &name,
+                          const std::string &json) {
+    auto doc = bsoncxx::from_json(json).view();
+    auto filter = mrpc::make_document(mrpc::kvp("name", name)).view();
+
+    auto coll = (*db)[collection];
+    auto result = coll.update_one(filter, doc);
+
+    std::optional<std::int32_t> ret;
+    if (result) {
+        ret = result->modified_count();
+    }
+
+    return ret;
+}
+
+std::optional<std::int32_t>
+DatabaseOperation::drop(const std::string &collection, const std::string &name) {
+    auto filter = mrpc::make_document(mrpc::kvp("name", name)).view();
+    auto coll = (*db)[collection];
+    auto result = coll.delete_one(filter);
+
+    std::optional<std::int32_t> ret;
+    if (result) {
+        ret = result->deleted_count();
+    }
+    return ret;
 }
 }

@@ -60,6 +60,8 @@ public:
 
     std::optional<std::int32_t> drop(const std::string &, const std::string &);
 
+    friend void dropDatabase(DatabaseOperation &);
+
 private:
     std::unique_ptr<mongocxx::database> db = nullptr;
 };

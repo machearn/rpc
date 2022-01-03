@@ -93,4 +93,8 @@ DatabaseOperation::drop(const std::string &collection, const std::string &name) 
     }
     return ret;
 }
+
+void dropDatabase(DatabaseOperation& operation) {
+    operation.db->drop();
+}
 }

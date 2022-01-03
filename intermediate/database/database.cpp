@@ -47,18 +47,18 @@ DatabaseOperation::insert(const std::string &collection, const std::string &json
     return ret;
 }
 
-std::optional<std::string>
+std::optional<std::tuple<std::string, std::int64_t>>
 DatabaseOperation::query(const std::string &collection, const std::string &name) {
     auto query_doc = mrpc::make_document(mrpc::kvp("name", name));
     auto coll = (*db)[collection];
 
     auto result = coll.find_one(query_doc.view());
-    std::optional<std::string> url;
+    std::optional<std::tuple<std::string, std::int64_t>> url;
     if (result) {
         auto view = result->view();
         auto ip = view["ip"].get_utf8().value.to_string();
-        auto port = view["port"].get_utf8().value.to_string();
-        url = ip + ':' + port;
+        auto port = view["port"].get_int64().value;
+        url = {ip, port};
     }
     return url;
 }

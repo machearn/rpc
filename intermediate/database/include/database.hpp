@@ -18,10 +18,10 @@
 #include <mongocxx/client.hpp>
 #include <mongocxx/collection.hpp>
 
-namespace mrpc {
 using bsoncxx::builder::basic::make_document;
 using bsoncxx::builder::basic::kvp;
 
+namespace mrpc {
 class DatabaseAccess {
 public:
     static DatabaseAccess &instance();

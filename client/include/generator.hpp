@@ -1,10 +1,10 @@
 #ifndef GENERATOR_H_
 #define GENERATOR_H_
 
-#include <iostream>
-#include <functional>
-#include <type_traits>
 #include <array>
+#include <functional>
+#include <iostream>
+#include <type_traits>
 
 #include "nlohmann/json.hpp"
 
@@ -14,34 +14,37 @@ namespace mrpc {
 using json = nlohmann::json;
 
 // type list for arguments
-template <typename... Args> struct type_list;
+template<typename... Args>
+struct type_list;
 
-template <typename T> struct type_list<T> { using head = T; };
+template<typename T>
+struct type_list<T> { using head = T; };
 
-template <typename Head, typename... Tail>
+template<typename Head, typename... Tail>
 struct type_list<Head, Tail...> : type_list<Head> {
     using tail = type_list<Tail...>;
 };
 
 // calculate size of type list
-template <typename... Args> struct count;
+template<typename... Args>
+struct count;
 
-template <typename... Args>
+template<typename... Args>
 struct count<type_list<Args...>>
     : std::integral_constant<std::size_t, sizeof...(Args)> {};
 
 // check whether it has tail
-template <typename ArgTypeList>
+template<typename ArgTypeList>
 struct has_tail : std::conditional_t<(count<ArgTypeList>::value > 1),
                                      std::true_type, std::false_type> {};
 
-template <typename T>
+template<typename T>
 void to_json(json& arg_json, const T& arg) {
     arg_json = arg;
 }
 
 // todo: try to use concept to make overload more precise
-template <typename T>
+template<typename T>
 void add_type(json& j, T* const arg) {
     j["type"] = "pointer";
     json arg_json;
@@ -50,7 +53,7 @@ void add_type(json& j, T* const arg) {
 }
 
 // todo: try rvalue reference
-template <typename T>
+template<typename T>
 void add_type(json& j, const T& arg) {
     j["type"] = "object";
     json arg_json;
@@ -58,7 +61,7 @@ void add_type(json& j, const T& arg) {
     j["arg"] = arg_json;
 }
 
-template <typename T>
+template<typename T>
 void add_type(json& j, std::unique_ptr<T>& arg) {
     j["type"] = "unique pointer";
     json arg_json;
@@ -66,7 +69,7 @@ void add_type(json& j, std::unique_ptr<T>& arg) {
     j["arg"] = arg_json;
 }
 
-template <typename T>
+template<typename T>
 void add_type(json& j, std::shared_ptr<T>& arg) {
     j["type"] = "shared pointer";
     json arg_json;
@@ -75,41 +78,42 @@ void add_type(json& j, std::shared_ptr<T>& arg) {
 }
 
 // Arguments Parser
-template <typename... Args>
+template<typename... Args>
 class ArgsParser {
-    template <typename T> static void parse(json& args_array, size_t index, T& arg){
+    template<typename T>
+    static void parse(json& args_array, size_t index, T& arg) {
         json type_arg;
         add_type(type_arg, arg);
         args_array[index] = type_arg;
     };
 
-    template <typename ArgTypeList, bool HasTail, typename... ArgList>
+    template<typename ArgTypeList, bool HasTail, typename... ArgList>
     struct args_parser_impl;
 
     // Case 1: has tail
-    template <typename ArgTypeList, typename Head, typename... Tail>
+    template<typename ArgTypeList, typename Head, typename... Tail>
     struct args_parser_impl<ArgTypeList, true, Head, Tail...> {
-        static void call(json& args_array, size_t index, Head &head, Tail &... tail) {
+        static void call(json& args_array, size_t index, Head& head, Tail&... tail) {
             parse(args_array, index, head);
 
             using ArgTypeListTail = typename ArgTypeList::tail;
 
             constexpr bool has_tail_v = has_tail<ArgTypeListTail>::value;
 
-            args_parser_impl<ArgTypeListTail, has_tail_v, Tail...>::call(args_array, index+1, tail...);
+            args_parser_impl<ArgTypeListTail, has_tail_v, Tail...>::call(args_array, index + 1, tail...);
         }
     };
 
     // Case 2: no tail, not empty
-    template <typename ArgTypeList, typename Head>
+    template<typename ArgTypeList, typename Head>
     struct args_parser_impl<ArgTypeList, false, Head> {
-        static void call(json& args_array, size_t index, Head &head) {
+        static void call(json& args_array, size_t index, Head& head) {
             parse(args_array, index, head);
         }
     };
 
 public:
-    static void parser(json& serialization, const std::string& func_name, Args &... args) {
+    static void parser(json& serialization, const std::string& func_name, Args&... args) {
         using ArgTypeList = type_list<Args...>;
 
         constexpr bool has_tail_v = has_tail<ArgTypeList>::value;
@@ -130,7 +134,7 @@ public:
 // todo: handle non-const reference or pointer parameter
 // todo: after finishing unit testing, support perfect forward
 // todo: change return type from string to Reply after implementing server, and remove relate test
-template <typename Reply, typename... Args>
+template<typename Reply, typename... Args>
 auto wrapper(const std::string& func_name) {
     auto new_func = [func_name](Args&&... args) {
         json serialization;
@@ -140,6 +144,6 @@ auto wrapper(const std::string& func_name) {
     };
     return new_func;
 }
-} // namespace mrpc
+}// namespace mrpc
 
-#endif // GENERATOR_H_
+#endif// GENERATOR_H_

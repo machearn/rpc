@@ -1,7 +1,7 @@
 #include "include/database.hpp"
 
 namespace mrpc {
-DatabaseAccess &DatabaseAccess::instance() {
+DatabaseAccess& DatabaseAccess::instance() {
     static DatabaseAccess instance;
     return instance;
 }
@@ -20,7 +20,7 @@ mongocxx::stdx::optional<DatabaseAccess::connection> DatabaseAccess::try_connect
     return _pool->try_acquire();
 }
 
-bool hasInstance(DatabaseAccess &obj) {
+bool hasInstance(DatabaseAccess& obj) {
     return !(obj._instance == nullptr);
 }
 
@@ -31,13 +31,13 @@ void configure(mongocxx::uri uri) {
                                              std::make_unique<mongocxx::pool>(std::move(uri)));
 }
 
-DatabaseOperation::DatabaseOperation(const std::string &database) {
+DatabaseOperation::DatabaseOperation(const std::string& database) {
     auto connection = DatabaseAccess::instance().get_connection();
     db = std::make_unique<mongocxx::database>((*connection)[database]);
 }
 
 std::optional<std::string>
-DatabaseOperation::insert(const std::string &collection, const std::string &json) {
+DatabaseOperation::insert(const std::string& collection, const std::string& json) {
     auto doc = bsoncxx::from_json(json);
     auto doc_view = doc.view();
     auto func_name = doc_view["func_name"].get_utf8().value.to_string();
@@ -54,7 +54,7 @@ DatabaseOperation::insert(const std::string &collection, const std::string &json
 }
 
 std::optional<std::tuple<std::string, std::int32_t>>
-DatabaseOperation::query(const std::string &collection, const std::string &name) {
+DatabaseOperation::query(const std::string& collection, const std::string& name) {
     auto query_doc = make_document(kvp("func_name", name));
     auto coll = (*db)[collection];
 
@@ -70,9 +70,9 @@ DatabaseOperation::query(const std::string &collection, const std::string &name)
 }
 
 std::optional<std::int32_t>
-DatabaseOperation::update(const std::string &collection,
-                          const std::string &name,
-                          const std::string &json) {
+DatabaseOperation::update(const std::string& collection,
+                          const std::string& name,
+                          const std::string& json) {
     auto coll = (*db)[collection];
     auto result = coll.update_one(make_document(kvp("func_name", name)),
                                   bsoncxx::from_json(json));
@@ -86,7 +86,7 @@ DatabaseOperation::update(const std::string &collection,
 }
 
 std::optional<std::int32_t>
-DatabaseOperation::drop(const std::string &collection, const std::string &name) {
+DatabaseOperation::drop(const std::string& collection, const std::string& name) {
     auto coll = (*db)[collection];
     auto result = coll.delete_one(make_document(kvp("func_name", name)));
 
@@ -97,7 +97,7 @@ DatabaseOperation::drop(const std::string &collection, const std::string &name) 
     return ret;
 }
 
-void dropDatabase(DatabaseOperation &operation) {
+void dropDatabase(DatabaseOperation& operation) {
     operation.db->drop();
 }
-}
+}// namespace mrpc

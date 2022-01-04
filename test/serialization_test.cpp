@@ -2,17 +2,17 @@
 
 #include <gtest/gtest.h>
 
+#include <map>
 #include <memory>
 #include <vector>
-#include <map>
 
 using json = nlohmann::json;
 struct TestArg {
     int id;
     std::string name;
 
-    TestArg(): id(0), name() {}
-    TestArg(int id_, std::string name_): id(id_), name(std::move(name_)) {}
+    TestArg() : id(0), name() {}
+    TestArg(int id_, std::string name_) : id(id_), name(std::move(name_)) {}
 };
 
 const json arg_rhs = R"({"id": 1, "name": "hello"})"_json;
@@ -87,7 +87,7 @@ TEST(ToJsonTest, MapToJson) {
     rhs["two"] = R"({"id": 2, "name": "world"})"_json;
 
     mrpc::to_json(lhs, kwargs);
-    for (auto &p : kwargs) {
+    for (auto& p: kwargs) {
         EXPECT_TRUE(arg_json_eq(lhs[p.first], rhs[p.first]));
     }
 }

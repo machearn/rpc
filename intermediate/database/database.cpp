@@ -33,13 +33,14 @@ DatabaseOperation::DatabaseOperation(const std::string &database) {
 
 std::optional<std::string>
 DatabaseOperation::insert(const std::string &collection, const std::string &json) {
-    auto doc = bsoncxx::from_json(json).view();
-    auto func_name = doc["name"].get_utf8().value.to_string();
+    auto doc = bsoncxx::from_json(json);
+    auto doc_view = doc.view();
+    auto func_name = doc_view["func_name"].get_utf8().value.to_string();
     auto query_result = this->query(collection, func_name);
     std::optional<std::string> ret;
     if (!query_result) {
         auto coll = (*db)[collection];
-        auto insert_result = coll.insert_one(doc);
+        auto insert_result = coll.insert_one(doc_view);
         if (insert_result) {
             ret = insert_result->inserted_id().get_oid().value.to_string();
         }
@@ -47,9 +48,9 @@ DatabaseOperation::insert(const std::string &collection, const std::string &json
     return ret;
 }
 
-std::optional<std::tuple<std::string, std::int64_t>>
+std::optional<std::tuple<std::string, std::int32_t>>
 DatabaseOperation::query(const std::string &collection, const std::string &name) {
-    auto query_doc = mrpc::make_document(mrpc::kvp("name", name));
+    auto query_doc = mrpc::make_document(mrpc::kvp("func_name", name));
     auto coll = (*db)[collection];
 
     auto result = coll.find_one(query_doc.view());
@@ -57,7 +58,7 @@ DatabaseOperation::query(const std::string &collection, const std::string &name)
     if (result) {
         auto view = result->view();
         auto ip = view["ip"].get_utf8().value.to_string();
-        auto port = view["port"].get_int64().value;
+        auto port = view["port"].get_int32().value;
         url = {ip, port};
     }
     return url;
@@ -67,11 +68,9 @@ std::optional<std::int32_t>
 DatabaseOperation::update(const std::string &collection,
                           const std::string &name,
                           const std::string &json) {
-    auto doc = bsoncxx::from_json(json).view();
-    auto filter = mrpc::make_document(mrpc::kvp("name", name)).view();
-
     auto coll = (*db)[collection];
-    auto result = coll.update_one(filter, doc);
+    auto result = coll.update_one(mrpc::make_document(mrpc::kvp("func_name", name)),
+                                  bsoncxx::from_json(json));
 
     std::optional<std::int32_t> ret;
     if (result) {
@@ -83,9 +82,8 @@ DatabaseOperation::update(const std::string &collection,
 
 std::optional<std::int32_t>
 DatabaseOperation::drop(const std::string &collection, const std::string &name) {
-    auto filter = mrpc::make_document(mrpc::kvp("name", name)).view();
     auto coll = (*db)[collection];
-    auto result = coll.delete_one(filter);
+    auto result = coll.delete_one(mrpc::make_document(mrpc::kvp("func_name", name)));
 
     std::optional<std::int32_t> ret;
     if (result) {
@@ -94,7 +92,7 @@ DatabaseOperation::drop(const std::string &collection, const std::string &name) 
     return ret;
 }
 
-void dropDatabase(DatabaseOperation& operation) {
+void dropDatabase(DatabaseOperation &operation) {
     operation.db->drop();
 }
 }

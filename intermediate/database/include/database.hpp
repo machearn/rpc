@@ -52,7 +52,7 @@ public:
 
     std::optional<std::string> insert(const std::string &, const std::string &);
 
-    std::optional<std::tuple<std::string, std::int64_t>>
+    std::optional<std::tuple<std::string, std::int32_t>>
     query(const std::string &, const std::string &);
 
     std::optional<std::int32_t>

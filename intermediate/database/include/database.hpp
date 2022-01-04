@@ -34,6 +34,7 @@ public:
     connection get_connection();
 
     mongocxx::stdx::optional<connection> try_connection();
+    friend bool hasInstance(DatabaseAccess&);
 
 private:
     DatabaseAccess() = default;

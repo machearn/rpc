@@ -20,10 +20,15 @@ mongocxx::stdx::optional<DatabaseAccess::connection> DatabaseAccess::try_connect
     return _pool->try_acquire();
 }
 
+bool hasInstance(DatabaseAccess &obj) {
+    return !(obj._instance == nullptr);
+}
+
 
 void configure(mongocxx::uri uri) {
-    DatabaseAccess::instance().configure(std::make_unique<mongocxx::instance>(),
-                                         std::make_unique<mongocxx::pool>(std::move(uri)));
+    if (!hasInstance(DatabaseAccess::instance()))
+        DatabaseAccess::instance().configure(std::make_unique<mongocxx::instance>(),
+                                             std::make_unique<mongocxx::pool>(std::move(uri)));
 }
 
 DatabaseOperation::DatabaseOperation(const std::string &database) {

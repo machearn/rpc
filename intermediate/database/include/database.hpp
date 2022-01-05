@@ -5,7 +5,8 @@
 #include <iostream>
 #include <memory>
 #include <optional>
-#include <vector>
+#include <string>
+#include <tuple>
 
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
@@ -53,11 +54,10 @@ public:
 
     std::optional<std::string> insert(const std::string&, const std::string&);
 
-    std::optional<std::tuple<std::string, std::int32_t>>
-    query(const std::string&, const std::string&);
+    std::optional<std::tuple<std::string, std::int32_t>> query(const std::string&,
+                                                               const std::string&);
 
-    std::optional<std::int32_t>
-    update(const std::string&, const std::string&, const std::string&);
+    std::optional<std::int32_t> update(const std::string&, const std::string&, const std::string&);
 
     std::optional<std::int32_t> drop(const std::string&, const std::string&);
 

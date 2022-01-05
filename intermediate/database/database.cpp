@@ -36,59 +36,46 @@ DatabaseOperation::DatabaseOperation(const std::string& database) {
     db = std::make_unique<mongocxx::database>((*connection)[database]);
 }
 
-std::optional<std::string>
-DatabaseOperation::insert(const std::string& collection, const std::string& json) {
-    auto doc = bsoncxx::from_json(json);
-    auto doc_view = doc.view();
-    auto func_name = doc_view["func_name"].get_utf8().value.to_string();
-    auto query_result = this->query(collection, func_name);
-    std::optional<std::string> ret;
-    if (!query_result) {
-        auto coll = (*db)[collection];
-        auto insert_result = coll.insert_one(doc_view);
-        if (insert_result) {
-            ret = insert_result->inserted_id().get_oid().value.to_string();
-        }
-    }
+std::int32_t DatabaseOperation::insert(const std::string& collection, const std::string& json) {
+    using view_or_value = bsoncxx::view_or_value<bsoncxx::document::view, bsoncxx::document::value>;
+    view_or_value filter = bsoncxx::from_json(json);
+    view_or_value doc = bsoncxx::document::value(make_document(kvp("$set", filter)));
+    auto coll = (*db)[collection];
+
+    auto options = mongocxx::options::update();
+    auto result = coll.update_one(filter, doc, options.upsert(true));
+
+    std::int32_t ret = result->matched_count();
     return ret;
 }
 
-std::optional<std::tuple<std::string, std::int32_t>>
+std::vector<std::tuple<std::string, std::int32_t>>
 DatabaseOperation::query(const std::string& collection, const std::string& name) {
-    auto query_doc = make_document(kvp("func_name", name));
     auto coll = (*db)[collection];
 
-    auto result = coll.find_one(query_doc.view());
-    std::optional<std::tuple<std::string, std::int64_t>> url;
-    if (result) {
-        auto view = result->view();
-        auto ip = view["ip"].get_utf8().value.to_string();
-        auto port = view["port"].get_int32().value;
-        url = {ip, port};
-    }
-    return url;
+    auto cursor = coll.find(make_document(kvp("func_name", name)));
+    std::vector<std::tuple<std::string, std::int32_t>> urls{};
+    for (auto& doc: cursor)
+        urls.emplace_back(doc["ip"].get_utf8().value.to_string(), doc["port"].get_int32().value);
+    return urls;
 }
 
 std::optional<std::int32_t>
 DatabaseOperation::update(const std::string& collection,
-                          const std::string& name,
-                          const std::string& json) {
+                          const std::string& origin,
+                          const std::string& replace) {
     auto coll = (*db)[collection];
-    auto result = coll.update_one(make_document(kvp("func_name", name)),
-                                  bsoncxx::from_json(json));
+    auto result = coll.update_one(bsoncxx::from_json(origin), bsoncxx::from_json(replace));
 
     std::optional<std::int32_t> ret;
-    if (result) {
-        ret = result->modified_count();
-    }
-
+    if (result) ret = result->modified_count();
     return ret;
 }
 
 std::optional<std::int32_t>
-DatabaseOperation::drop(const std::string& collection, const std::string& name) {
+DatabaseOperation::drop(const std::string& collection, const std::string& json) {
     auto coll = (*db)[collection];
-    auto result = coll.delete_one(make_document(kvp("func_name", name)));
+    auto result = coll.delete_one(bsoncxx::from_json(json));
 
     std::optional<std::int32_t> ret;
     if (result) {

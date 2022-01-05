@@ -17,8 +17,8 @@ public:
         : operation(std::forward<DatabaseOperation>(operation_)), registry("registry") {}
     ~Register() = default;
 
-    std::optional<std::string> registerr(const std::string&);
-    std::optional<std::tuple<std::string, std::int16_t>> query(const std::string&);
+    std::int32_t registerr(const std::string&);
+    std::vector<std::tuple<std::string, std::int32_t>> query(const std::string&);
     std::optional<std::int32_t> update(const std::string&, const std::string&);
     std::optional<std::int32_t> drop(const std::string&);
 };

@@ -35,6 +35,7 @@ public:
     connection get_connection();
 
     mongocxx::stdx::optional<connection> try_connection();
+
     friend bool hasInstance(DatabaseAccess&);
 
 private:
@@ -52,10 +53,10 @@ public:
 
     explicit DatabaseOperation(const std::string&);
 
-    std::optional<std::string> insert(const std::string&, const std::string&);
+    std::int32_t insert(const std::string&, const std::string&);
 
-    std::optional<std::tuple<std::string, std::int32_t>> query(const std::string&,
-                                                               const std::string&);
+    std::vector<std::tuple<std::string, std::int32_t>>
+    query(const std::string&, const std::string&);
 
     std::optional<std::int32_t> update(const std::string&, const std::string&, const std::string&);
 

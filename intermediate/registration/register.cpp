@@ -1,13 +1,13 @@
 #include "include/register.hpp"
 
 namespace mrpc {
-std::optional<std::string> Register::registerr(const std::string& json) {
-    std::optional<std::string> ret;
+std::int32_t Register::registerr(const std::string& json) {
+    std::int32_t ret;
     ret = operation.insert(registry, json);
     return ret;
 }
 
-std::optional<std::tuple<std::string, std::int16_t>> Register::query(const std::string& func_name) {
+std::vector<std::tuple<std::string, std::int32_t>> Register::query(const std::string& func_name) {
     return operation.query(registry, func_name);
 }
 

@@ -6,7 +6,7 @@
 namespace mrpc {
 using SigHandler = void (*)(int);
 
-SigHandler mySignal(int signo, SigHandler handler) {
+SigHandler signal(int signo, SigHandler handler) {
     struct sigaction act, oact;
 
     act.sa_handler = handler;

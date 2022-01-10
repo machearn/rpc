@@ -6,7 +6,7 @@ add_library(rpc_client INTERFACE)
 
 target_include_directories(rpc_client INTERFACE "${PROJECT_SOURCE_DIR}/client/include")
 
-target_link_libraries(rpc_client INTERFACE nlohmann_json::nlohmann_json network)
+target_link_libraries(rpc_client INTERFACE nlohmann_json::nlohmann_json utils)
 
 # add rpc_clangd target to generate compile command for clangd
 # indexing nlhomann/json

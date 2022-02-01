@@ -19,3 +19,9 @@ set_target_properties(register PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/intermediate/registration/include")
 
 target_link_libraries(register database)
+
+add_library(balancer STATIC balancer/balancer.cpp)
+set_target_properties(balancer PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/intermediate/balancer/include")
+
+target_link_libraries(balancer nlohmann_json::nlohmann_json utils)

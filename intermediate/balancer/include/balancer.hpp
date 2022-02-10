@@ -31,19 +31,19 @@ private:
 public:
     Service() = default;
 
-    Service( std::string  url_,
+    Service(std::string url_,
             std::int16_t port_,
             std::int32_t weight_) : url(std::move(url_)), port(port_), weight(weight_) {};
 
     ~Service() = default;
 
-    bool isDown() const;
+    [[nodiscard]] bool isDown() const;
 
-    std::string getUrl() const;
+    [[nodiscard]] std::string getUrl() const;
 
-    std::int16_t getPort() const;
+    [[nodiscard]] std::int16_t getPort() const;
 
-    std::int32_t getWeight() const;
+    [[nodiscard]] std::int32_t getWeight() const;
 
     void updateWeight();
 
@@ -55,15 +55,29 @@ private:
     std::unordered_map<std::string, std::list<Service>> hosts{};
     std::unordered_map<std::string, std::int32_t> threshold{};
     ::pid_t registration_pid{};
+    fs::path fifo_path{};
 
-    void requestData(const std::string&, ::pid_t, const fs::path&);
-public:
+    void requestData(const std::string&);
+
     Balancer() = default;
 
+    ~Balancer() = default;
+
+public:
+    Balancer(const Balancer&) = delete;
+
+    Balancer& operator=(const Balancer&) = delete;
+
+    Balancer(const Balancer&&) = delete;
+
+    Balancer& operator=(const Balancer&&) = delete;
+
     static Balancer& instance() {
-        static Balancer balancer{};
+        static Balancer balancer;
         return balancer;
     }
+
+    void setRegistrationPid(::pid_t pid);
 
     void insertEntry(const std::string&, std::string, std::int16_t);
 
@@ -73,7 +87,7 @@ public:
 
     void resetWeights(const std::string&);
 
-    void updateHosts(const std::string&, ::pid_t, const fs::path&);
+    void updateHosts(const std::string&);
 };
 }// namespace mrpc
 

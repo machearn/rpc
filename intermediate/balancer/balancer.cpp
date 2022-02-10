@@ -37,8 +37,10 @@ std::tuple<std::string, std::int16_t> mrpc::Balancer::epoll(const std::string& f
     return std::make_tuple(top->getUrl(), top->getPort());
 }
 
-void mrpc::Balancer::initialize(::pid_t pid, const std::filesystem::path& fifo_path) {
-    requestData("ALL", pid, fifo_path);
+void mrpc::Balancer::initialize(::pid_t pid, const fs::path& path) {
+    registration_pid = pid;
+    fifo_path = path;
+    requestData("ALL");
 }
 
 void mrpc::Balancer::insertEntry(const std::string& func_name, std::string ip, std::int16_t port) {
@@ -50,22 +52,25 @@ void mrpc::Balancer::resetWeights(const std::string& func_name) {
     for (auto& service: hosts[func_name]) {
         service.reset();
     }
-}
+    threshold[func_name]--;
 
-void
-mrpc::Balancer::updateHosts(const std::string& func_name, ::pid_t pid, const fs::path& fifo_path) {
-    if (threshold[func_name] > 0) {
-        threshold[func_name]--;
-    } else {
-        requestData(func_name, pid, fifo_path);
+    if (!threshold[func_name]) {
+        requestData(func_name);
     }
 }
 
 void
-mrpc::Balancer::requestData(const std::string& func_name,
-                            ::pid_t pid,
-                            const std::filesystem::path& fifo_path) {
-    ::kill(pid, SIGUSR1);
+mrpc::Balancer::updateHosts(const std::string& func_name) {
+    if (threshold[func_name] > 0) {
+        threshold[func_name]--;
+    } else {
+        requestData(func_name);
+    }
+}
+
+void
+mrpc::Balancer::requestData(const std::string& func_name) {
+    ::kill(registration_pid, SIGUSR1);
     int fifo_fd;
 
     if ((fifo_fd = ::open(fifo_path.c_str(), O_WRONLY)) < 0) {
@@ -105,4 +110,8 @@ mrpc::Balancer::requestData(const std::string& func_name,
                     json.at("ip").get<std::string>(),
                     json.at("port").get<int16_t>());
     }
+}
+
+void mrpc::Balancer::setRegistrationPid(::pid_t pid) {
+    registration_pid = pid;
 }

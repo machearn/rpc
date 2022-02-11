@@ -12,8 +12,10 @@ std::int16_t mrpc::Service::getPort() const {
     return port;
 }
 
-void mrpc::Service::updateWeight() {
+std::int32_t mrpc::Service::updateWeight() {
+    if (isDown()) return -1;
     weight--;
+    return weight;
 }
 
 void mrpc::Service::reset() {
@@ -28,7 +30,10 @@ std::tuple<std::string, std::int16_t> mrpc::Balancer::epoll(const std::string& f
     auto& host_list = hosts.at(func_name);
 
     auto top = host_list.begin();
-    top->updateWeight();
+    if (top->updateWeight() < 0) {
+        resetWeights(func_name);
+        return this->epoll(func_name);
+    }
 
     auto dest = std::find_if(++host_list.cbegin(), host_list.cend(),
                              [top](Service& s) { return s.getWeight() < top->getWeight(); });
@@ -55,15 +60,6 @@ void mrpc::Balancer::resetWeights(const std::string& func_name) {
     threshold[func_name]--;
 
     if (!threshold[func_name]) {
-        requestData(func_name);
-    }
-}
-
-void
-mrpc::Balancer::updateHosts(const std::string& func_name) {
-    if (threshold[func_name] > 0) {
-        threshold[func_name]--;
-    } else {
         requestData(func_name);
     }
 }
@@ -103,6 +99,7 @@ mrpc::Balancer::requestData(const std::string& func_name) {
     while ((read_size = ::read(fifo_fd, (void*) buf, 1024)) > 0) {
         data.append(buf);
     }
+    ::close(fifo_fd);
 
     nlohmann::json json = nlohmann::json::parse(data);
     for (auto& element: json) {
@@ -114,4 +111,8 @@ mrpc::Balancer::requestData(const std::string& func_name) {
 
 void mrpc::Balancer::setRegistrationPid(::pid_t pid) {
     registration_pid = pid;
+}
+
+bool mrpc::Balancer::isAvailable(std::string& func_name) {
+    return !hosts[func_name].cbegin()->isDown();
 }

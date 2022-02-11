@@ -45,7 +45,7 @@ public:
 
     [[nodiscard]] std::int32_t getWeight() const;
 
-    void updateWeight();
+    [[nodiscard]] std::int32_t updateWeight();
 
     void reset();
 };
@@ -56,8 +56,6 @@ private:
     std::unordered_map<std::string, std::int32_t> threshold{};
     ::pid_t registration_pid{};
     fs::path fifo_path{};
-
-    void requestData(const std::string&);
 
     Balancer() = default;
 
@@ -77,7 +75,11 @@ public:
         return balancer;
     }
 
+    bool isAvailable(std::string&);
+
     void setRegistrationPid(::pid_t pid);
+
+    void requestData(const std::string&);
 
     void insertEntry(const std::string&, std::string, std::int16_t);
 
@@ -86,8 +88,6 @@ public:
     std::tuple<std::string, std::int16_t> epoll(const std::string&);
 
     void resetWeights(const std::string&);
-
-    void updateHosts(const std::string&);
 };
 }// namespace mrpc
 

@@ -1,13 +1,13 @@
 #ifndef SIGNAL_HPP
 #define SIGNAL_HPP
 
-#include <signal.h>
+#include <csignal>
 
 namespace mrpc {
 using SigHandler = void (*)(int);
 
 SigHandler signal(int signo, SigHandler handler) {
-    struct sigaction act, oact;
+    struct sigaction act{}, oact{};
 
     act.sa_handler = handler;
     sigemptyset(&act.sa_mask);

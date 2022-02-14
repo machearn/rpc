@@ -1,7 +1,7 @@
 #include "include/register.hpp"
 
 namespace mrpc {
-std::int32_t Register::registerr(const std::string& json) {
+std::int32_t Register::add(const std::string& json) {
     std::int32_t ret;
     ret = operation.insert(registry, json);
     return ret;

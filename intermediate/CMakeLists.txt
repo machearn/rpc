@@ -14,11 +14,11 @@ set_target_properties(database PROPERTIES
 
 target_link_libraries(database mongo::bsoncxx_shared mongo::mongocxx_shared)
 
-add_executable(register registration/register.cpp)
+add_executable(register registration/register.cpp registration/main.cpp)
 set_target_properties(register PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/intermediate/registration/include")
 
-target_link_libraries(register database)
+target_link_libraries(register database nlohmann_json::nlohmann_json utils)
 
 add_executable(balancer balancer/balancer.cpp balancer/main.cpp)
 set_target_properties(balancer PROPERTIES

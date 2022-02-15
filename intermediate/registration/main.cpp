@@ -5,6 +5,7 @@
 
 #include "nlohmann/json.hpp"
 #include "include/register.hpp"
+#include "signal.hpp"
 
 std::filesystem::path fifo_path{};
 
@@ -42,6 +43,10 @@ void sigusr1(int signo) {
 }
 
 int main(int argc, char** argv) {
+    if (mrpc::signal(SIGUSR1, sigusr1) == SIG_ERR) {
+        std::cerr << "set signal error" << std::endl;
+        return -1;
+    }
     mrpc::configure(std::move(mongocxx::uri{}));
     
     for( ; ;) {

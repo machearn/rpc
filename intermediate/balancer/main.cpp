@@ -75,10 +75,12 @@ int main(int argc, char** argv) {
 
     if (mrpc::signal(SIGUSR1, sigusr1) == SIG_ERR) {
         std::cerr << "set signal error" << std::endl;
+        return -1;
     }
 
     if (mrpc::signal(SIGUSR2, sigusr2) == SIG_ERR) {
         std::cerr << "set signal error" << std::endl;
+        return -1;
     }
 
     for( ; ;) {

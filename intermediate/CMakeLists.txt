@@ -25,3 +25,6 @@ set_target_properties(balancer PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${PROJECT_SOURCE_DIR}/intermediate/balancer/include")
 
 target_link_libraries(balancer nlohmann_json::nlohmann_json utils)
+
+add_executable(intermediate main.cpp)
+target_link_libraries(intermediate utils)

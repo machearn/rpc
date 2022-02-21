@@ -5,12 +5,12 @@
 
 #include "nlohmann/json.hpp"
 #include "include/register.hpp"
-#include "signal.hpp"
+#include "daemonize.hpp"
 
-std::filesystem::path fifo_path{};
+static std::filesystem::path fifo_path{};
+static int fifo_fd;
 
 void sigusr1(int signo) {
-    int fifo_fd;
     if ((fifo_fd = ::open(fifo_path.c_str(), O_RDONLY)) < 0) {
         std::cerr << "Failed open FIFO" << std::endl;
         std::cerr << "errno: " << errno << std::endl;
@@ -43,6 +43,17 @@ void sigusr1(int signo) {
 }
 
 int main(int argc, char** argv) {
+    mrpc::daemonize("registration");
+    fifo_path = "/var/mrpc_fifo";
+
+    if ((fifo_fd = ::open(fifo_path.c_str(), O_WRONLY)) < 0) {
+        ::syslog(LOG_ERR, "open FIFO error");
+        exit(errno);
+    }
+    ::pid_t pid = ::getpid();
+    ::write(fifo_fd, &pid, sizeof(::pid_t));
+    ::close(fifo_fd);
+
     if (mrpc::signal(SIGUSR1, sigusr1) == SIG_ERR) {
         std::cerr << "set signal error" << std::endl;
         return -1;

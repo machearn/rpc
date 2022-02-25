@@ -8,7 +8,7 @@
 
 #include "nlohmann/json.hpp"
 
-#include "network.hpp"
+#include "socket.hpp"
 
 namespace mrpc {
 using json = nlohmann::json;
@@ -137,10 +137,24 @@ public:
 template<typename Reply, typename... Args>
 auto wrapper(const std::string& func_name) {
     auto new_func = [func_name](Args&&... args) {
-        json serialization;
+        json serialization{};
         ArgsParser<Args...>::parser(serialization, func_name, args...);
-        Reply reply = 0;
-        return to_string(serialization);
+        std::string json_str = nlohmann::to_string(serialization);
+        std::size_t json_len = json_str.length();
+
+        auto host_socket = std::make_unique<mrpc::Socket>(AF_INET, SOCK_STREAM, 0, 10);
+        host_socket->send_length(json_len, 0);
+        host_socket->sendn(json_str.c_str(), json_len, 0);
+        std::size_t recv_size = 0;
+        host_socket->recv_length(host_socket->get_socket(), &recv_size, 0);
+        char* recv_data = new char[recv_size+1]{};
+        host_socket->recvn(host_socket->get_socket(), recv_data, recv_size, 0);
+        std::string ret_str{recv_data};
+
+        json ret{ret_str};
+
+        Reply reply{ret["value"]};
+        return reply;
     };
     return new_func;
 }

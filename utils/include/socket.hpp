@@ -7,6 +7,7 @@
 #include <memory>
 #include <algorithm>
 #include <string>
+#include <span>
 
 namespace mrpc {
 constexpr const size_t RECV_BUF_SIZE = 1024;
@@ -39,9 +40,9 @@ public:
 
     static ssize_t recv_length(int connfd, size_t* len, int flags);
 
-    ssize_t sendn(const void* data, size_t nbytes, int flags) const;
+    ssize_t sendn(std::span<const char> data, int flags) const;
 
-    static ssize_t recvn(int connfd, void* data, size_t nbytes, int flags);
+    static ssize_t recvn(int connfd, std::span<char> data, int flags);
 
     int close();
 
@@ -83,9 +84,9 @@ ssize_t Socket::recv_length(int connfd, size_t* len, int flags) {
     return ::recv(connfd, len, sizeof(size_t), 0);
 }
 
-ssize_t Socket::sendn(const void* data, size_t nbytes, int flags) const {
-    size_t left_bytes = nbytes;
-    const char* ptr = (char*)data;
+ssize_t Socket::sendn(std::span<const char> data, int flags) const {
+    size_t left_bytes = data.size();
+    const char* ptr = data.data();
 
     ssize_t sended = 0;
     while (left_bytes > 0) {
@@ -93,12 +94,12 @@ ssize_t Socket::sendn(const void* data, size_t nbytes, int flags) const {
         left_bytes -= sended;
         ptr += sended;
     }
-    return nbytes;
+    return data.size();
 }
 
-ssize_t Socket::recvn(int connfd, void* data, size_t nbytes, int flags) {
-    size_t left_bytes = nbytes;
-    char* ptr = (char*)data;
+ssize_t Socket::recvn(int connfd, std::span<char> data, int flags) {
+    size_t left_bytes = data.size();
+    char* ptr = data.data();
 
     ssize_t recved = 0;
     while (left_bytes > 0) {
@@ -109,7 +110,7 @@ ssize_t Socket::recvn(int connfd, void* data, size_t nbytes, int flags) {
     }
 
     ::close(connfd);
-    return nbytes-left_bytes;
+    return data.size()-left_bytes;
 }
 
 int Socket::close() {

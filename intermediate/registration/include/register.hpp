@@ -11,14 +11,13 @@ class Register {
 private:
     DatabaseOperation operation;
     std::string registry;
-    std::int32_t threshold;
 
-    Register() : operation("registration"), registry("registry"), threshold(REGISTER_THRESHOLD) {}
+    Register() : operation("registration"), registry("registry") {}
     ~Register() = default;
     explicit Register(const std::string& database)
-            : operation(database), registry("registry"), threshold(REGISTER_THRESHOLD) {}
+            : operation(database), registry("registry") {}
     explicit Register(DatabaseOperation&& operation_)
-            : operation(std::forward<DatabaseOperation>(operation_)), registry("registry"), threshold(REGISTER_THRESHOLD) {}
+            : operation(std::forward<DatabaseOperation>(operation_)), registry("registry") {}
 public:
     Register(const Register&)=delete;
     Register(const Register&&)=delete;

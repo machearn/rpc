@@ -60,13 +60,6 @@ int main() {
         }
     }
 
-    if ((fifo_fd = ::open("/var/mrpc_fifo", O_RDONLY)) < 0) {
-        ::syslog(LOG_ERR, "open FIFO error");
-        exit(errno);
-    }
-    ::read(fifo_fd, &balancer_id, sizeof(::pid_t));
-    ::close(fifo_fd);
-
     for( ; ;) {
         pause();
     }

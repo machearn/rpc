@@ -27,4 +27,4 @@ set_target_properties(balancer PROPERTIES
 target_link_libraries(balancer nlohmann_json::nlohmann_json utils)
 
 add_executable(intermediate main.cpp)
-target_link_libraries(intermediate utils)
+target_link_libraries(intermediate utils nlohmann_json::nlohmann_json)

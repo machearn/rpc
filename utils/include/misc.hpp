@@ -51,6 +51,15 @@ private:
     std::int32_t count_;
     std::int32_t mutex_;
 };
+
+struct Message {
+    long type;
+    ::pid_t pid;
+    char buffer[512];
+
+    Message(): type(), pid(), buffer() {}
+    ~Message()=default;
+};
 } //namespace mrpc
 
 #endif //RPC_MISC_HPP

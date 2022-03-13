@@ -107,13 +107,12 @@ int main(int argc, char** argv) {
         std::exit(errno);
     }
 
-    auto host_addr = std::make_unique<::sockaddr_in>();
+    auto host_addr = std::make_shared<::sockaddr_in>();
     host_addr->sin_family = AF_INET;
     ::inet_pton(AF_INET, ip.c_str(), &host_addr->sin_addr);
     host_addr->sin_port = htons(port);
 
-    host_socket->bind(std::unique_ptr<const ::sockaddr>((::sockaddr*) host_addr.get()),
-                      sizeof(::sockaddr_in));
+    host_socket->bind(reinterpret_cast<const sockaddr*>(host_addr.get()), sizeof(::sockaddr_in));
     host_socket->listen();
 
     auto remote_addr = std::make_unique<::sockaddr_in>();
@@ -122,7 +121,7 @@ int main(int argc, char** argv) {
     int connfd;
 
     for (;;) {
-        connfd = host_socket->accept(std::unique_ptr<::sockaddr>((::sockaddr*) remote_addr.get()),
+        connfd = host_socket->accept(reinterpret_cast<sockaddr*>(remote_addr.get()),
                                      &remote_addr_len);
         if (connfd < 0) {
             ::syslog(LOG_ERR, "connection error");
@@ -147,7 +146,7 @@ int main(int argc, char** argv) {
             std::string message(total_size, 0);
             host_socket->recvn(connfd, message, 0);
 
-            nlohmann::json package(message);
+            nlohmann::json package = nlohmann::json::parse(message);
             mrpc::OP op = package["op"];
 
             switch (op) {
@@ -190,7 +189,8 @@ int main(int argc, char** argv) {
             ::close(connfd);
             ::shmdt(threshold);
             std::exit(0);
+        } else {
+            ::close(connfd);
         }
-        ::close(connfd);
     }
 }

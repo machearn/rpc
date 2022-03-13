@@ -28,15 +28,17 @@ public:
 
     bool valid() const;
 
-    int connect(std::unique_ptr<const sockaddr> remote_addr, socklen_t remote_addr_len) const;
+    int connect(const sockaddr* remote_addr, socklen_t remote_addr_len) const;
 
-    int bind(std::unique_ptr<const sockaddr> host_addr, socklen_t host_addr_len) const;
+    int bind(const sockaddr* host_addr, socklen_t host_addr_len) const;
 
     int listen() const;
 
-    int accept(std::unique_ptr<sockaddr> remote_addr, socklen_t* remote_addr_len) const;
+    int accept(sockaddr* remote_addr, socklen_t* remote_addr_len) const;
 
     ssize_t send_length(size_t len, int flags) const;
+
+    static ssize_t return_length(int connfd, std::int64_t len, int flags);
 
     static ssize_t recv_length(int connfd, size_t* len, int flags);
 
@@ -59,29 +61,28 @@ bool Socket::valid() const {
     return socket_ >= 0;
 }
 
-int Socket::connect(const std::unique_ptr<const sockaddr> remote_addr,
-                    socklen_t remote_addr_len) const {
-    return ::connect(socket_, remote_addr.get(), remote_addr_len);
+int Socket::connect(const sockaddr* remote_addr, socklen_t remote_addr_len) const {
+    return ::connect(socket_, remote_addr, remote_addr_len);
 }
 
-int Socket::bind(const std::unique_ptr<const sockaddr> host_addr, socklen_t host_addr_len) const {
-    return ::bind(socket_, host_addr.get(), host_addr_len);
+int Socket::bind(const sockaddr* host_addr, socklen_t host_addr_len) const {
+    return ::bind(socket_, host_addr, host_addr_len);
 }
 
 int Socket::listen() const {
     return ::listen(socket_, backlog_);
 }
 
-int Socket::accept(std::unique_ptr<sockaddr> remote_addr, socklen_t* remote_addr_len) const {
-    return ::accept(socket_, remote_addr.get(), remote_addr_len);
+int Socket::accept(sockaddr* remote_addr, socklen_t* remote_addr_len) const {
+    return ::accept(socket_, remote_addr, remote_addr_len);
 }
 
 ssize_t Socket::send_length(size_t len, int flags) const {
-    return ::send(socket_, &len, sizeof(size_t), 0);
+    return ::send(socket_, &len, sizeof(size_t), flags);
 }
 
 ssize_t Socket::recv_length(int connfd, size_t* len, int flags) {
-    return ::recv(connfd, len, sizeof(size_t), 0);
+    return ::recv(connfd, len, sizeof(size_t), flags);
 }
 
 ssize_t Socket::sendn(std::span<const char> data, int flags) const {
@@ -117,6 +118,10 @@ int Socket::close() {
     int ret = ::close(socket_);
     socket_ = -1;
     return ret;
+}
+
+ssize_t Socket::return_length(int connfd, std::int64_t len, int flags) {
+    return ::send(connfd, &len, sizeof(size_t), flags);
 }
 }// namespace mrpc
 

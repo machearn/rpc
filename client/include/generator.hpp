@@ -147,14 +147,18 @@ auto wrapper(const std::string& func_name) {
         host_socket->send_length(json_len, 0);
         host_socket->sendn(json_str, 0);
 
-        std::size_t recv_size = 0;
-        host_socket->recv_length(host_socket->get_socket(), &recv_size, 0);
+        std::int64_t recv_size = 0;
+        host_socket->recv_length(host_socket->get_socket(), (std::size_t*)&recv_size, 0);
+        if (recv_size < 0) {
+            std::cerr << "error" << std::endl;
+            exit(1);
+        }
 
         std::string recv_data(recv_size, 0);
         host_socket->recvn(host_socket->get_socket(), recv_data, 0);
         std::string ret_str{recv_data};
 
-        json ret{ret_str};
+        json ret = json::parse(ret_str);
 
         Reply reply{ret["value"]};
         return reply;
